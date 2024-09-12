@@ -5,13 +5,11 @@
  * @author eternal
  * @authorId 263689920210534400
  */
-
 const { Webpack, React, DOM, Patcher, Utils, alert } = BdApi;
 
 const Classes = Webpack.getModule(m => m.sidebar && m.activityPanel && m.container);
 const Guilds = Webpack.getModule(m => (m = m.type?.toString?.()) && ~m.indexOf('guildsnav'));
 const _React = Webpack.getModule(m => m.Fragment && Object.keys(m).length === 3);
-console.log(_React);
 const Dispatcher = Webpack.getModule(m => m._dispatch);
 
 class Plugin {
@@ -91,17 +89,23 @@ class Plugin {
 					return () => Dispatcher.unsubscribe('HIDER_TOGGLE_SERVERS', listener);
 				}, []);
 
-				const nav = Utils.findInTree(res, r => r?.type === 'nav');
-				if (!nav) return res;
+				const wrapped = Utils.findInTree(res, r => r?.hasOwnProperty('theme') && r.children !== void 0);
+				if (!wrapped) return res;
 
-				delete nav.props.style;
-				nav.props.style = {};
+				wrapped.children = (orig => function (...args) {
+					const res = orig.apply(this, args);
 
-				if (_this.state.guilds) {
-					nav.props.style.display = 'none';
-				} else {
-					nav.props.style.display = 'block';
-				}
+					delete res.props.style;
+					res.props.style = {};
+
+					if (_this.state.guilds) {
+						res.props.style.display = 'none';
+					} else {
+						res.props.style.display = 'block';
+					}
+
+					return res;
+				})(wrapped.children);
 
 				return res;
 			});
@@ -114,7 +118,7 @@ class Plugin {
 
 			Patcher.after('hider', _React, key, (_, [, props], _res) => {
 				if (props.hasNotice !== void 0) {
-
+					console.log(_res);
 					Patcher.after('hider', _res, 'type', (_, args, res) => {
 						const [, forceUpdate] = React.useState({});
 
@@ -129,15 +133,23 @@ class Plugin {
 							return () => Dispatcher.unsubscribe('HIDER_TOGGLE_CHANNELS', listener);
 						}, []);
 
+						const wrapped = Utils.findInTree(res, r => r?.hasOwnProperty('theme') && r.children !== void 0);
+						if (!wrapped) return res;
 
-						delete res.props.style;
-						res.props.style = {};
+						wrapped.children = (orig => function (...args) {
+							const res = orig.apply(this, args);
 
-						if (_this.state.channels) {
-							res.props.style.display = 'none';
-						} else {
-							res.props.style.display = 'flex';
-						}
+							delete res.props.style;
+							res.props.style = {};
+
+							if (_this.state.channels) {
+								res.props.style.display = 'none';
+							} else {
+								res.props.style.display = 'flex';
+							}
+
+							return res;
+						})(wrapped.children);
 
 						return res;
 					});
